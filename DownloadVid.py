@@ -194,7 +194,7 @@ class DownloadThread(QThread):
         if self.type == "playlist":
             yt = YouTube(video_url, on_progress_callback=self.playlist_callback)
         else:
-            yt = YouTube(video_url, on_progress_callback=self.progress_callback)
+            yt = YouTube(video_url, on_progress_callback=self.music_callback)
 
         # Get the highest resolution audio stream
         audio_stream = yt.streams.filter(only_audio=True).first()
