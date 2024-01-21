@@ -26,8 +26,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.listWidget.addItem(msg)
 
     def update_progress(self, value):
-        print()
         self.progressBar.setValue(value)
+
+    def update_btn(self, value):
+        if value == 1:
+            self.pushButton_2.setEnabled(True)
+        else:
+            self.pushButton_2.setEnabled(False)
 
     def checkbox_state_changed(self, state):
         if state:
@@ -37,13 +42,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def start_download(self):
         self.listWidget.clear()
+        self.progressBar.setValue(0)
 
         url = self.lineEdit.text()
+        url_list = url.split(',')
+
         self.file_path = self.lineEdit_2.text()
         mp3 = self.checkBox.isChecked()
         index = self.comboBox.currentIndex()
 
-        self.dt = DownloadThread(url, self.file_path, mp3, index)
+        self.dt = DownloadThread(url_list, self.file_path, mp3, index)
+        self.dt.finish.connect(self.update_btn)
         self.dt.msg.connect(self.update_msg)
         self.dt.progress.connect(self.update_progress)
         self.dt.start()
