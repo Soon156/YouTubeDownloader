@@ -1,7 +1,7 @@
 import sys
 
-from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog
-from YouTubeUi import Ui_MainWindow
+from PySide6.QtWidgets import QMainWindow, QApplication, QFileDialog
+from YouYubeUI import Ui_MainWindow
 from DownloadVid import DownloadThread
 
 
