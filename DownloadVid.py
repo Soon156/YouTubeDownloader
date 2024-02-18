@@ -2,7 +2,7 @@ import os
 import re
 from datetime import datetime
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 from pydub import AudioSegment
 from pytube import YouTube, Playlist
 
@@ -11,9 +11,9 @@ resolution_list = ['', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p'
 
 
 class DownloadThread(QThread):
-    msg = pyqtSignal(str)
-    progress = pyqtSignal(int)
-    finish = pyqtSignal(int)
+    msg = Signal(str)
+    progress = Signal(int)
+    finish = Signal(int)
 
     def __init__(self, url, output, mp3, index):
         super().__init__()
@@ -37,7 +37,7 @@ class DownloadThread(QThread):
                 if not self.output:
                     self.msg.emit("Warning: No output folder is insert, output to Desktop/Output folder")
                     self.output = desktop_path
-                if self.resolution:
+                if self.resolution or self.resolution == 0:
                     self.msg.emit("Resolution: " + self.resolution)
                 self.msg.emit("Output Folder: " + self.output)
                 self.process_input()
@@ -52,10 +52,10 @@ class DownloadThread(QThread):
         self.finish.emit(0)
         self.msg.emit("Retrieving info from YouTube...\n")
 
-        if "playlist?list" in self.url[0] or len(self.url) > 1:
+        if "list" in self.url[0] or len(self.url) > 1:
             playlist_title = str(datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
             playlist = None
-            if "playlist?list" in self.url[0]:
+            if "list" in self.url[0]:
                 self.type = "playlist"
                 # Create a Playlist object
                 playlist = Playlist(self.url[0])
@@ -118,6 +118,7 @@ class DownloadThread(QThread):
                         self.msg.emit("\nVideo " + str(idx + 1) + ", " + str(self.total_videos - idx - 1) + " file left")
                         self.download_video(video_url, output_path)
 
+            self.progress.emit(100)
             self.msg.emit("\nAll download progress is complete")
 
         else:
@@ -125,6 +126,7 @@ class DownloadThread(QThread):
                 self.download_music(self.url[0], self.output)
             else:
                 self.download_video(self.url[0], self.output)
+            self.progress.emit(100)
             self.msg.emit("\nDownload completed.")
 
     def playlist_callback(self, stream, chunk, remaining):
@@ -137,11 +139,11 @@ class DownloadThread(QThread):
         self.progress.emit(int(progress_percentage))
 
     def progress_callback(self, stream, chunk, remaining):
-        progress = (1 - remaining / self.video_stream.filesize) * 100
+        progress = (1 - remaining / self.video_stream.filesize) * 99
         self.progress.emit(int(progress))
 
     def music_callback(self, stream, chunk, remaining):
-        progress = (1 - remaining / self.music_stream.filesize) * 100
+        progress = (1 - remaining / self.music_stream.filesize) * 99
         self.progress.emit(int(progress))
 
     def get_file_size(self, video_url):
@@ -163,7 +165,7 @@ class DownloadThread(QThread):
                 video_stream = yt.streams.get_highest_resolution()
                 if not precheck:
                     self.msg.emit(
-                        "Target resolution to high, try to get the highest available resolution: " + video_stream.resolution)
+                        "Target resolution not available, try to get the highest available resolution: " + video_stream.resolution)
         else:
             video_stream = yt.streams.get_highest_resolution()
         return video_stream
@@ -210,6 +212,7 @@ class DownloadThread(QThread):
         # Convert the audio to MP3
         audio = AudioSegment.from_file(audio_file)
         mp3_file = os.path.splitext(audio_file)[0] + ".mp3"
+        self.msg.emit("Converting to mp3.....")
         audio.export(mp3_file, format="mp3")
 
         # Remove the original audio file
